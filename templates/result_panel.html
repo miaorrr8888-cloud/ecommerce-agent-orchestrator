@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKU 结果页 · {{SKU}}</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#262b36; --fg:#e8ecf3; --muted:#8b95a7;
+    --pass:#22c55e; --revision:#f59e0b; --reject:#ef4444; --blocked:#64748b; --accent:#3b82f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;padding:28px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:22px}
+  h1{font-size:22px;margin:0;font-weight:600;letter-spacing:.3px}
+  .meta{color:var(--muted);font-size:13px}
+  .badge{padding:5px 14px;border-radius:999px;font-weight:700;font-size:13px;letter-spacing:.5px;
+         border:1px solid transparent}
+  .badge.PASS{background:rgba(34,197,94,.15);color:var(--pass);border-color:rgba(34,197,94,.4)}
+  .badge.REVISION{background:rgba(245,158,11,.15);color:var(--revision);border-color:rgba(245,158,11,.4)}
+  .badge.REJECT{background:rgba(239,68,68,.15);color:var(--reject);border-color:rgba(239,68,68,.4)}
+  .badge.BLOCKED{background:rgba(100,116,139,.18);color:#a8b3c4;border-color:rgba(100,116,139,.45)}
+  .badge.PENDING{background:rgba(59,130,246,.15);color:var(--accent);border-color:rgba(59,130,246,.4)}
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h2{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600;
+           text-transform:uppercase;letter-spacing:1px}
+  .champ{grid-column:span 2}
+  @media(max-width:760px){.champ{grid-column:span 1}}
+  .hook{font-size:20px;line-height:1.45;font-weight:600;margin:2px 0 10px}
+  .media{background:#0b0d11;border:1px dashed var(--line);border-radius:10px;
+         min-height:170px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+  .media img{max-width:100%;border-radius:10px;display:block}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .kv:last-child{border-bottom:0}
+  .kv span:first-child{color:var(--muted)}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .ok{background:var(--pass)} .bad{background:var(--reject)} .warn{background:var(--revision)} .na{background:var(--blocked)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:12px}
+  tr.win td{color:var(--pass);font-weight:600}
+  ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+  code{background:#0b0d11;padding:1px 6px;border-radius:5px;font-size:12px;color:#9db2d0}
+  footer{color:var(--muted);font-size:12px;margin-top:20px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>{{SKU}}</h1>
+    <span class="badge {{STATUS}}">{{STATUS}}</span>
+    <span class="meta">{{PLATFORM}} · {{RUN_TIME}} · run <code>{{RUN_ID}}</code></span>
+  </header>
+
+  <div class="grid">
+
+    <!-- 冠军 Hook -->
+    <div class="card champ">
+      <h2>冠军 Hook</h2>
+      <div class="hook">{{CHAMPION_HOOK}}</div>
+      <div class="kv"><span>备选</span><span>{{HOOK_ALTS}}</span></div>
+    </div>
+
+    <!-- 冠军主图 -->
+    <div class="card">
+      <h2>冠军主图</h2>
+      <div class="media">{{CHAMPION_IMAGE}}</div>
+      <div class="kv"><span>路径</span><span><code>{{CHAMPION_IMAGE_PATH}}</code></span></div>
+    </div>
+
+    <!-- 冠军视频 -->
+    <div class="card">
+      <h2>冠军视频</h2>
+      <div class="media">{{CHAMPION_VIDEO}}</div>
+      <div class="kv"><span>状态</span><span>{{VIDEO_STATE}}</span></div>
+      <div class="kv"><span>路径</span><span><code>{{CHAMPION_VIDEO_PATH}}</code></span></div>
+    </div>
+
+    <!-- QA -->
+    <div class="card">
+      <h2>QA（独立终审）</h2>
+      <div class="checks">{{QA_CHECKS}}</div>
+      <div class="kv" style="margin-top:10px"><span>结论</span><span>{{QA_VERDICT}}</span></div>
+    </div>
+
+    <!-- 发布 -->
+    <div class="card">
+      <h2>发布状态</h2>
+      <div class="kv"><span>状态</span><span>{{PUBLISH_STATUS}}</span></div>
+      <div class="kv"><span>商品绑定</span><span>{{PUBLISH_BINDING}}</span></div>
+      <div class="kv"><span>取证截图</span><span><code>{{PUBLISH_EVIDENCE}}</code></span></div>
+    </div>
+
+    <!-- 真实表现 -->
+    <div class="card" style="grid-column:1/-1">
+      <h2>真实表现数据</h2>
+      <table>
+        <thead><tr><th>指标</th><th>数值</th><th>环比</th><th>来源</th></tr></thead>
+        <tbody>{{PERF_ROWS}}</tbody>
+      </table>
+    </div>
+
+    <!-- 素材排名 -->
+    <div class="card" style="grid-column:1/-1">
+      <h2>素材排名 / 下一轮冠军</h2>
+      <table>
+        <thead><tr><th>#</th><th>素材</th><th>类型</th><th>CTR</th><th>CVR</th><th>结论</th></tr></thead>
+        <tbody>{{RANK_ROWS}}</tbody>
+      </table>
+    </div>
+
+    <!-- 效率 -->
+    <div class="card" style="grid-column:1/-1">
+      <h2>效率（一眼可见）</h2>
+      <table>
+        <thead><tr><th>指标</th><th>数值</th></tr></thead>
+        <tbody>
+          <tr><td>TOTAL_TIME 总耗时</td><td><b>{{TOTAL_TIME}}</b> s（SLA &lt;300s → {{SLA_MET}}）</td></tr>
+          <tr><td>AGENT_TIME Agent 占用</td><td>{{AGENT_TIME}} s</td></tr>
+          <tr><td>MACHINE_GATE_TIME 机器闸门</td><td>{{MACHINE_GATE_TIME}} s</td></tr>
+          <tr><td>CRITIC_QA_TIME 终审</td><td>{{CRITIC_QA_TIME}} s</td></tr>
+          <tr><td>WAIT_TIME 纯等待</td><td>{{WAIT_TIME}} s</td></tr>
+          <tr><td>MAX_CONCURRENCY 最大并发</td><td><b>{{MAX_CONCURRENCY}}</b>（需 ≥3 → {{CONCURRENCY_OK}}）</td></tr>
+          <tr><td>PERFORMANCE</td><td>{{PERFORMANCE}}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- BLOCKED -->
+    <div class="card" style="grid-column:1/-1">
+      <h2>待老板补充字段（BLOCKED）</h2>
+      <ul>{{BLOCKED_ROWS}}</ul>
+    </div>
+
+  </div>
+
+  <footer>结果页由 ecommerce-agent-orchestrator 生成 · 过程日志不在此展示</footer>
+</div>
+</body>
+</html>
