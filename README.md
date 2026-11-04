@@ -43,6 +43,16 @@ ecommerce-agent-orchestrator/
 
 ---
 
+## 安装
+
+```sh
+# 纯标准库即可运行；GATE-3/GATE-4 涉及图片与视频时才需要额外装
+python -m pip install Pillow imageio-ffmpeg   # 可选
+python -m unittest discover -s tests -t tests  # 17 项测试
+```
+
+作为技能使用时，把整个目录放进 `%USERPROFILE%\.workbuddy\skills\`。
+
 ## 三、快速开始
 
 ```bash
@@ -56,8 +66,11 @@ python -m unittest discover -s tests      # 应全部 OK
 python scripts/state.py init --sku Q2-001 --root runs --platform douyin
 
 # 2. 建事实源（唯一事实源；缺的字段只能标 BLOCKED）
-cp templates/PRODUCT_FACTS.md runs/Q2-001/PRODUCT_FACTS.json
+cp templates/PRODUCT_FACTS.template.json runs/Q2-001/PRODUCT_FACTS.json
+cp templates/BLOCKED_FIELDS.template.json runs/Q2-001/BLOCKED_FIELDS.json
 #    → 填入真实信息，四级标注：VERIFIED / USER_STATED / INFERRED / BLOCKED
+#    → 两个模板都是 JSON：以前这里让你把 .md 复制成 .json，闸门一读就 JSONDecodeError，已改
+#    → 空字段一律判 FAIL，这是有意的 fail-closed，不要为了变绿而编数
 
 # 3. 跑闸门
 python scripts/gates.py --run runs/Q2-001 --facts runs/Q2-001/PRODUCT_FACTS.json --gate all
@@ -129,6 +142,14 @@ GATE-1 的 PASS/FAIL 分支、状态机初始化。
 > 测试全部离线、不访问网络、不读真实业务数据。
 
 ---
+
+## 适用用户
+
+**适合：** 有内容团队或外包协作的中小品牌 / 代运营公司——核心痛点不是「没工具」，
+而是「Agent 自己给自己打满分」；需要一套可审计的门禁流程与状态机。
+
+**不适合：** 单人做一条视频就想立刻出片的场景（直接用 shortvideo-pipeline 更快）；
+不愿意按模板填状态文件的人。
 
 ## 七、已知边界
 

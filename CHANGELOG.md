@@ -1,5 +1,29 @@
 # 更新记录
 
+## 2026-11-03 · v2.1.0
+
+### 修复
+
+- **快速开始第一条命令就崩**：README 让用户 `cp templates/PRODUCT_FACTS.md runs/<SKU>/PRODUCT_FACTS.json`，
+  把 Markdown 复制成 .json，`gates.py` 一 `json.loads` 就 `JSONDecodeError`。
+  新增机器可读的 `templates/PRODUCT_FACTS.template.json` 与 `templates/BLOCKED_FIELDS.template.json`，
+  README 改为复制这两个，并把 `.md` 明确标成「给人读的说明版」。
+- **GATE-4 带 traceback 崩掉**：成片/字幕还没产出时，函数第一行就读 `subtitles.srt`，`FileNotFoundError`
+  直接把整个进程带走，前面三个闸门的结果一起丢。改为 fail-closed：缺文件/缺依赖/一帧都抽不出
+  都返回 `verdict: FAIL` + 具体原因，并照常写 `frames_manifest.json`。
+- **退出码没生效**：`main()` 的返回值被忽略（`main()` 而非 `raise SystemExit(main())`），
+  输入错误也返回 0。现在输入错误返回 2，闸门有 FAIL 返回 1，全 PASS 返回 0。
+- **facts 传错文件时给出可执行的提示**：文件不存在 / 不是合法 JSON，都直接指出
+  「JSON 模板是 templates/PRODUCT_FACTS.template.json，不是 .md」，不再甩 traceback。
+
+### 测试
+
+- 23 项通过（新增 6 项：模板契约 3 项 + 闸门健壮性 3 项），含「空模板必须判 FAIL 而不是崩」。
+
+### 文档
+
+- 新增「安装」与「适用用户」两节。
+
 ## 2026-11-03 · v2.0.2 依赖解耦与元数据规范
 
 本版**不放宽任何闸门**，只解决「第三方技能不在就整体失效」的单点依赖问题。

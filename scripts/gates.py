@@ -248,14 +248,40 @@ def gate3_media_tech(run: Path, video: Path, storyboard: Path, srt: Path):
 
 # ---------------------------------------------------------------- GATE 4 (帧抽取)
 def gate4_extract_frames(run: Path, video: Path, srt: Path, max_frames: int = 30, per_shot: int = 3):
-    import imageio_ffmpeg
-    from PIL import Image
-    FF = imageio_ffmpeg.get_ffmpeg_exe()
+    """抽帧给 Critic 看。素材还没产出时返回 FAIL 报告，不抛异常。
+
+    回归背景：原来这里第一行就 srt_texts(srt)，成片/字幕尚未产出时直接
+    FileNotFoundError，整个 gates.py 带 traceback 崩掉，前面三个闸门的结果一起丢失。
+    闸门的原则是「判 FAIL 并说清缺什么」，不是「崩掉」。
+    """
     out = run / "04_critic" / "frames"
     out.mkdir(parents=True, exist_ok=True)
     for f in out.glob("*.png"):
         f.unlink()
+    manifest_path = run / "04_critic" / "frames_manifest.json"
 
+    def fail(reason: str, **extra):
+        man = {"frames_extracted": 0, "skipped": True, "reason": reason,
+               "max_frames": max_frames, "per_shot_max": per_shot, "verdict": "FAIL",
+               "sampling_policy": "每镜 ≤3 帧、整片 ≤30 帧（禁止全帧解码）", **extra}
+        manifest_path.write_text(json.dumps(man, ensure_ascii=False, indent=2), encoding="utf-8")
+        return man
+
+    missing = []
+    if not Path(video).is_file():
+        missing.append(f"成片 {video}")
+    if not Path(srt).is_file():
+        missing.append(f"字幕 {srt}")
+    if missing:
+        return fail("缺必需文件：" + "、".join(missing) + " —— 生产完成后再跑 GATE-4")
+
+    try:
+        import imageio_ffmpeg
+        from PIL import Image
+    except ImportError as exc:
+        return fail(f"缺依赖：{exc.name}（pip install imageio-ffmpeg Pillow）")
+
+    FF = imageio_ffmpeg.get_ffmpeg_exe()
     texts = srt_texts(srt)
     n_shot = len(texts) or 8
     shot_d = 14.67 / n_shot
@@ -277,9 +303,14 @@ def gate4_extract_frames(run: Path, video: Path, srt: Path, max_frames: int = 30
         if f.exists():
             files.append(f)
 
+    if not files:
+        # 一帧都抽不出来：ffmpeg 打不开这个文件，或者时长参数全落在画面外
+        return fail("ffmpeg 未能从成片抽出任何一帧（文件可能损坏或不是视频）",
+                    shots=n_shot, planned=len(picks))
+
     sheet = run / "04_critic" / "contact_sheet.png"
     cols = 6
-    rows = (len(files) + cols - 1) // cols
+    rows = max(1, (len(files) + cols - 1) // cols)
     tw = 480
     sheet_img = Image.new("RGB", (cols * tw, rows * tw), (18, 18, 22))
     for idx, f in enumerate(files):
@@ -290,9 +321,9 @@ def gate4_extract_frames(run: Path, video: Path, srt: Path, max_frames: int = 30
     manifest = {"frames_extracted": len(files), "max_frames": max_frames, "per_shot_max": per_shot,
                 "shots": n_shot, "contact_sheet": str(sheet),
                 "frame_files": [str(f) for f in files],
-                "sampling_policy": "每镜 ≤3 帧、整片 ≤30 帧（禁止全帧解码）"}
-    (run / "04_critic" / "frames_manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+                "sampling_policy": "每镜 ≤3 帧、整片 ≤30 帧（禁止全帧解码）",
+                "verdict": "PASS"}
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
 
 
@@ -307,7 +338,18 @@ def main():
     a = ap.parse_args()
 
     run = Path(a.run).resolve()
-    facts = json.loads(Path(a.facts).read_text(encoding="utf-8"))
+    facts_path = Path(a.facts)
+    if not facts_path.is_file():
+        print(f"[错误] 事实源不存在：{facts_path}\n"
+              f"       先复制模板：cp templates/PRODUCT_FACTS.template.json {facts_path}", file=sys.stderr)
+        return 2
+    try:
+        facts = json.loads(facts_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        # 最常见的成因：把 templates/PRODUCT_FACTS.md 直接复制成了 .json
+        print(f"[错误] 事实源不是合法 JSON：{facts_path}（{exc.msg}，第 {exc.lineno} 行）\n"
+              f"       JSON 模板是 templates/PRODUCT_FACTS.template.json，不是 .md", file=sys.stderr)
+        return 2
     sku = a.sku or facts.get("sku_id", "")
     video = Path(a.video) if a.video else run / "07_media" / "composited" / "vid_final_fixed.mp4"
     storyboard = run / "03_creative" / "storyboard.json"
@@ -326,8 +368,10 @@ def main():
         elif g == "3":
             res = gate3_media_tech(run, video, storyboard, srt)
         else:
-            res = {"gate": "GATE-4_FRAME_EXTRACT",
-                   "manifest": gate4_extract_frames(run, video, srt), "verdict": "PASS"}
+            man = gate4_extract_frames(run, video, srt)
+            res = {"gate": "GATE-4_FRAME_EXTRACT", "manifest": man,
+                   "verdict": man.get("verdict", "PASS"),
+                   "notes": [man["reason"]] if man.get("reason") else []}
         el = time.time() - t0
         timings["gate%s" % g] = round(el, 3)
         res["elapsed_s"] = round(el, 3)
@@ -364,4 +408,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

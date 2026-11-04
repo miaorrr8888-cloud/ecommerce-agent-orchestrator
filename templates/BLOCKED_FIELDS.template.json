@@ -1,0 +1,14 @@
+{
+  "_readme": [
+    "复制成 runs/<SKU>/BLOCKED_FIELDS.json，把「资料缺失、下游不得猜测」的字段逐个填进 blocked。",
+    "blocked 为空时 GATE-2 的 blocked_fields 判 FAIL —— 空清单意味着「没登记缺口」，不是「没有缺口」。",
+    "每条写明 field（缺什么）、needed_by（谁在等）、severity（hard=阻断生产 / soft=可后补）。"
+  ],
+  "blocked": [],
+  "example_entry": {
+    "field": "商品页价格",
+    "needed_by": "COPY",
+    "severity": "hard",
+    "note": "未上架，价格未知；禁止写「到手价」"
+  }
+}

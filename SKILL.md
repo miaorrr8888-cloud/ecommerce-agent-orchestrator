@@ -7,7 +7,7 @@ description_zh: 4 个专业 Agent + 4 个机器闸门。Agent 只做需要理解
 category: operations
 author: WorkBuddy
 agent_created: true
-version: "2.0.2"
+version: 2.1.0
 updated: "2026-11-03"
 license: MIT
 ---

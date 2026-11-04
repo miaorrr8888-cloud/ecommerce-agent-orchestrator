@@ -245,5 +245,87 @@ class TestStateMachine(unittest.TestCase):
             self.assertTrue(found, "init 未写出任何状态文件")
 
 
+class TestTemplateContracts(unittest.TestCase):
+    """模板必须能被闸门直接吃下去。
+
+    回归背景：README 第 2 步曾让人 `cp templates/PRODUCT_FACTS.md runs/<SKU>/PRODUCT_FACTS.json`，
+    把 Markdown 复制成 .json，gates.py 一 load 就 JSONDecodeError，快速开始第一条命令就崩。
+    这里用测试钉住：模板是合法 JSON，且包含闸门真正读取的字段名。
+    """
+
+    TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
+
+    def test_facts_template_is_valid_json_with_required_keys(self):
+        p = self.TEMPLATES / "PRODUCT_FACTS.template.json"
+        facts = json.loads(p.read_text(encoding="utf-8"))
+        for key in ("sku_id", "product_name", "source_file",
+                    "source_file_supporting", "identity_reference_image"):
+            self.assertIn(key, facts, f"模板缺闸门必读字段 {key}")
+        self.assertIsInstance(facts["identity_reference_image"], dict)
+        self.assertIn("value", facts["identity_reference_image"])
+        self.assertEqual(facts["sku_id"], "", "模板不应预填任何真实 SKU")
+
+    def test_blocked_fields_template_is_valid_json(self):
+        p = self.TEMPLATES / "BLOCKED_FIELDS.template.json"
+        data = json.loads(p.read_text(encoding="utf-8"))
+        self.assertIsInstance(data.get("blocked"), list)
+
+    def test_gate1_runs_on_blank_template_without_crashing(self):
+        """空模板必须被判 FAIL，而不是抛异常——fail-closed 不等于崩。"""
+        gates = load("gates", SCRIPTS / "gates.py")
+        facts = json.loads((self.TEMPLATES / "PRODUCT_FACTS.template.json").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as d:
+            run = Path(d)
+            (run / "02_commerce").mkdir()
+            (run / "03_creative").mkdir()
+            res = gates.gate1_sku_guard(run, facts, "")
+            self.assertEqual(res["verdict"], "FAIL")
+            self.assertEqual(res["checks"]["PRODUCT_NAME"], "FAIL")
+
+
+class GateRobustnessTests(unittest.TestCase):
+    """闸门必须「判 FAIL 并说清缺什么」，不能带 traceback 崩掉。
+
+    回归背景：成片与字幕还没产出时，GATE-4 第一行就读 srt，直接 FileNotFoundError，
+    整个 gates.py 崩掉，前面三个闸门的结果一起丢。另一处是 facts 传错文件类型
+    （把 .md 当 .json），同样崩 traceback，用户看不出是「复制错模板」。
+    """
+
+    def test_gate4_missing_inputs_fails_without_crashing(self):
+        gates = load("gates", SCRIPTS / "gates.py")
+        with tempfile.TemporaryDirectory() as d:
+            run = Path(d)
+            man = gates.gate4_extract_frames(run, run / "nope.mp4", run / "nope.srt")
+            self.assertEqual(man["verdict"], "FAIL")
+            self.assertIn("缺必需文件", man["reason"])
+            self.assertTrue((run / "04_critic" / "frames_manifest.json").is_file(),
+                            "失败时也要留下 manifest，方便排查")
+
+    def test_main_exits_2_when_facts_is_not_json(self):
+        gates = load("gates", SCRIPTS / "gates.py")
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            bad = d / "PRODUCT_FACTS.json"
+            bad.write_text("# 这是 Markdown，不是 JSON\n\n- SKU: `X`\n", encoding="utf-8")
+            argv = sys.argv
+            sys.argv = ["gates.py", "--run", str(d), "--facts", str(bad), "--gate", "1"]
+            try:
+                code = gates.main()
+            finally:
+                sys.argv = argv
+            self.assertEqual(code, 2, "main 应以 2 表示输入错误，由 __main__ 转成退出码")
+
+    def test_main_exits_2_when_facts_missing(self):
+        gates = load("gates", SCRIPTS / "gates.py")
+        with tempfile.TemporaryDirectory() as d:
+            argv = sys.argv
+            sys.argv = ["gates.py", "--run", d, "--facts", str(Path(d) / "nope.json"), "--gate", "1"]
+            try:
+                code = gates.main()
+            finally:
+                sys.argv = argv
+            self.assertEqual(code, 2, "facts 缺失属于输入错误，应返回 2 而不是抛异常")
+
+
 if __name__ == "__main__":
     unittest.main()
