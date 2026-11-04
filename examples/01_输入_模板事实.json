@@ -1,0 +1,23 @@
+{
+  "_readme": [
+    "这是机器可读的唯一事实源模板，复制成 runs/<SKU>/PRODUCT_FACTS.json 后逐项填写。",
+    "空字符串表示「尚未提供」：闸门会判 FAIL，这是有意的 fail-closed，不要为了让检查变绿而编造。",
+    "每个值建议配合 verification_status: VERIFIED / USER_STATED / INFERRED / BLOCKED。",
+    "模板本身不含任何真实商品数据。"
+  ],
+  "sku_id": "",
+  "sku_id_status": "BLOCKED",
+  "product_name": "",
+  "product_name_status": "BLOCKED",
+  "platform": "",
+  "source_file": "",
+  "source_file_supporting": [],
+  "identity_reference_image": {
+    "value": "",
+    "verification_status": "BLOCKED",
+    "evidence": ""
+  },
+  "created_at": "",
+  "provided_by": "",
+  "evidence_root": "01_facts/evidence/"
+}

@@ -143,6 +143,26 @@ GATE-1 的 PASS/FAIL 分支、状态机初始化。
 
 ---
 
+## 输入与输出
+
+**输入**
+
+| 输入 | 形式 | 说明 |
+|---|---|---|
+| SKU 事实 | `runs/<SKU>/PRODUCT_FACTS.json` | 唯一事实源，四级标注：VERIFIED / USER_STATED / INFERRED / BLOCKED |
+| 阻断字段 | `runs/<SKU>/BLOCKED_FIELDS.json` | 明确声明哪些字段未核实，空文件会被 GATE-2 判 FAIL |
+| 素材与成片 | `runs/<SKU>/` 下按目录约定 | 主图、分镜、字幕、成片，路径见「目录结构」 |
+
+**输出**
+
+| 输出 | 位置 | 说明 |
+|---|---|---|
+| 闸门报告 | `runs/<SKU>/_gate/gates.json` | 4 个闸门逐项判定 + 每项耗时 + 性能标记 |
+| 抽帧证据 | `04_critic/contact_sheet.png` | 每镜 ≤3 帧、整片 ≤30 帧的拼图，供人工复核 |
+| 进程退出码 | stdout | 全部 PASS 返回 0，任一 FAIL 返回非 0 |
+
+真实运行结果见 [`examples/02_示例输出.md`](examples/02_示例输出.md)（模板输入 → 4 个闸门全 FAIL）。
+
 ## 适用用户
 
 **适合：** 有内容团队或外包协作的中小品牌 / 代运营公司——核心痛点不是「没工具」，
