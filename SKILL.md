@@ -1,5 +1,8 @@
 ---
 name: ecommerce-agent-orchestrator
+slug: zhengrong-ecommerce-agent-orchestrator
+displayName: "电商内容制作总控"
+summary: "4 个 Agent 只做理解与创意，4 个脚本闸门做判定，一个 SKU 走完选题、文案、主图、视频到发布。"
 display_name: "电商内容制作总控"
 display_name_en: E-commerce 4-Agent Orchestrator
 description: 电商内容生产的轻量编排总控：只保留 4 个 Agent（RESEARCH / COMMERCE-COPY / CREATIVE / CRITIC），其余全部改为确定性脚本闸门。当用户要求为某个 SKU 出选题/文案/主图/视频/详情页并发布，或提到"分工""并行 Agent""总控""SKU 内容生产""冠军素材""结果页""按架构跑""4 Agent"时使用。触发词：跑这个SKU、出一套素材、按架构跑、并行生产、上架发布、素材复盘。
